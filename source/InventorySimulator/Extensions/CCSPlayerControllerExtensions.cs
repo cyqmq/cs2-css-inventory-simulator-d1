@@ -60,10 +60,7 @@ public static class CCSPlayerControllerExtensions
             if (self.IsValid)
             {
                 self.PrintToChat(
-                    CSS.Plugin.Localizer[
-                        "invsim.ws_completed",
-                        InventorySimulatorCtx.GetChatPrefix()
-                    ]
+                    Runtime.Plugin.Localizer["invsim.ws_completed", Rules.GetChatPrefix()]
                 );
                 self.HandleInventoryLoad();
                 self.HandlePostRefreshInventory(oldInventory);
@@ -139,7 +136,7 @@ public static class CCSPlayerControllerExtensions
             if (self.IsUseCmdBusy())
                 controllerState.IsUseCmdBlocked = true;
             controllerState.DisposeUseCmdTimer();
-            controllerState.UseCmdTimer = CSS.Plugin.AddTimer(
+            controllerState.UseCmdTimer = Runtime.Plugin.AddTimer(
                 0.1f,
                 () =>
                 {
@@ -317,14 +314,14 @@ public static class CCSPlayerControllerExtensions
         controllerState.IsFetching = false;
         Server.NextWorldUpdate(() =>
         {
-            var prefix = InventorySimulatorCtx.GetChatPrefix();
+            var prefix = Rules.GetChatPrefix();
             if (response == null)
             {
-                self?.PrintToChat(CSS.Plugin.Localizer["invsim.login_failed", prefix]);
+                self?.PrintToChat(Runtime.Plugin.Localizer["invsim.login_failed", prefix]);
                 return;
             }
             self?.PrintToChat(
-                CSS.Plugin.Localizer[
+                Runtime.Plugin.Localizer[
                     "invsim.login",
                     prefix,
                     $"{Api.GetUrl("/api/sign-in/callback")}?token={response.Token}"
@@ -365,7 +362,27 @@ public static class CCSPlayerControllerExtensions
             sprayDecal.TintID = item.Tint.Value;
             sprayDecal.DispatchSpawn();
             self.EmitSound("SprayCan.Paint");
+            self.ConsumeGraffitiCharge(item);
         }
+    }
+
+    public static void ConsumeGraffitiCharge(this CCSPlayerController self, InventoryItem item)
+    {
+        if (item.Charges == null)
+            return;
+        item.Charges -= 1;
+        if (item.Uid != null)
+            Api.SendConsumeItemSpray(self.SteamID, item.Uid.Value);
+        var prefix = Rules.GetChatPrefix();
+        if (item.Charges <= 0)
+        {
+            self.GetState().Inventory?.ClearGraffiti();
+            self.PrintToChat(Runtime.Plugin.Localizer["invsim.spray_charges_empty", prefix]);
+        }
+        else
+            self.PrintToChat(
+                Runtime.Plugin.Localizer["invsim.spray_charges", prefix, item.Charges.Value]
+            );
     }
 
     public static void HandleSprayDecalCreated(
