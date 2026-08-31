@@ -1,5 +1,22 @@
 # CS2 CSS Inventory Simulator (D1 Worker 定制版)
 
+> ## 🗄️ 仓库已归档（ARCHIVED）
+>
+> **本仓库已停止开发并归档。** 原因是所依赖的后端仓库 [cs2-cfworker-inventory-simulator](https://github.com/cyqmq/cs2-cfworker-inventory-simulator) 已暂停开发并归档，本插件的定制后端也随之失去维护，后续不再更新。
+
+### 归档原因与现状难点
+
+这个定制版把官方插件后台从 `inventory.cstrike.app` 移植到了 **Cloudflare Workers 免费版（D1 + Assets）**。后端最终卡在免费版的**运行时配额**上——不是代码/数据问题，而是免费版资源不足以稳定承载这个应用：
+
+- **免费版 CPU 硬限制**：每个请求 CPU 上限仅 **10ms**，超出即报 `Error 1102 Worker exceeded resource limits`（整页 500 / 请求被丢弃）。
+- **巨大的 SSR 冷启动成本**：应用是服务端渲染（SSR），每个请求冷启动要解析并执行约 **19 MB** JS（主 bundle ≈9.8MB + 物品名翻译表 ≈7.8MB + Prisma wasm ≈1.7MB），还要加载约 1.6MB CS2 经济数据并反序列化完整玩家库存。实测冷启动 3.6~4.4 秒，远超 10ms 配额。
+- **用户可见表现**：页面 `Error 1102`、间歇性 "Application Error"、**登录添加皮肤后刷新丢失**（其实是写入请求超限失败，未写进 D1；数据本身未丢）。
+- **难以免费修复**：冷启动本身即超限、实例回收不可控（免费版无法保温）、大重构只是缓解而非根治 10ms 硬配额、付费优化性价比低。唯一根治路径是升级 Workers Paid（$5/月，CPU 配额提升到 30s），因此项目最终选择归档。
+
+本插件仓库（此 fork）随后端一同归档，保留定制改动与使用说明以备参考。
+
+---
+
 本仓库是官方插件 [ianlucas/cs2-css-inventory-simulator](https://github.com/ianlucas/cs2-css-inventory-simulator) 的定制 fork。
 
 **主要改动**：把插件对接的服务端后台从官方的 `inventory.cstrike.app` 换成你自己的 Cloudflare Worker + D1 服务。域名与 API key 使用自定义 ConVar（`invsim_url` / `invsim_apikey`）配置。
@@ -20,9 +37,9 @@
 
 后台是独立的 Cloudflare Worker + D1 项目：
 
-**[cyqmq/cs2-cfworker-inventory-simulator](https://github.com/cyqmq/cs2-cfworker-inventory-simulator)**
+**[cyqmq/cs2-cfworker-inventory-simulator](https://github.com/cyqmq/cs2-cfworker-inventory-simulator)** （🗄️ 已归档）
 
-先部署好 Worker，再让本插件通过 `invsim_url` / `invsim_apikey` 连接该服务。
+> 该后端已 **暂停开发并归档**（因免费版资源配额无法稳定承载，详见上文"归档原因与现状难点"）。本插件随之归档。若未来恢复，可先部署好 Worker，再让本插件通过 `invsim_url` / `invsim_apikey` 连接该服务。
 
 ## 使用教程
 
