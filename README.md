@@ -2,7 +2,7 @@
 
 本仓库是官方插件 [ianlucas/cs2-css-inventory-simulator](https://github.com/ianlucas/cs2-css-inventory-simulator) 的定制 fork。
 
-**主要改动**：把插件对接的服务端后台从官方的 `inventory.cstrike.app` 换成你自己的 Cloudflare Worker + D1 服务。域名与 API key 使用自定义 ConVar（`invsim_url` / `invsim_apikey`）配置，不写死在源码之外的公开文档里。
+**主要改动**：把插件对接的服务端后台从官方的 `inventory.cstrike.app` 换成你自己的 Cloudflare Worker + D1 服务。域名与 API key 使用自定义 ConVar（`invsim_url` / `invsim_apikey`）配置。
 
 ## 这次定制改了什么
 
