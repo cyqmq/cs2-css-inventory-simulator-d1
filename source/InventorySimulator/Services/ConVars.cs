@@ -13,7 +13,7 @@ public static class ConVars
     public static readonly FakeConVar<string> Url = new(
         "invsim_url",
         "API URL for the Inventory Simulator service.",
-        "https://inventory.cstrike.app"
+        "YOUR_WORKER_URL"
     );
 
     public static readonly FakeConVar<string> ApiKey = new(

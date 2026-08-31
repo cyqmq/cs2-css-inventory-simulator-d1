@@ -1,0 +1,9 @@
+# 合并上游时，ConVars.cs 始终保留我们指向 D1 worker 的定制（URL / invsim_apikey）
+# 需要本地执行一次: git config merge.keepMine.driver 'cp %O %A'
+# 这样 `git merge upstream/main` 时该文件自动保留我们的版本，不产生冲突。
+source/InventorySimulator/Services/ConVars.cs merge=keepMine
+
+# 常见二进制/构建产物不纳入文本 merge
+*.dll binary
+*.pdb binary
+*.zip binary

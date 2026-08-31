@@ -1,0 +1,71 @@
+name: Sync Upstream
+
+on:
+  schedule:
+    # 每 6 小时自动检查上游更新
+    - cron: '0 */6 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.SYNC_TOKEN || github.token }}
+
+      - name: Configure git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Sync upstream
+        run: |
+          git remote add upstream https://github.com/ianlucas/cs2-css-inventory-simulator.git
+          git fetch upstream --tags --prune
+
+          # 保护本地定制文件：ConVars.cs 始终保留我们指向 D1 worker 的 URL/key
+          # 备份 → merge → 恢复，避免上游合入覆盖我们的后台配置
+          cp source/InventorySimulator/Services/ConVars.cs /tmp/ConVars.cs.ours
+
+          git merge upstream/main --no-edit || echo "MERGE_HAD_CONFLICTS=1" >> "$GITHUB_ENV"
+
+          # 恢复我们的 ConVars.cs（无论是否有冲突）
+          cp /tmp/ConVars.cs.ours source/InventorySimulator/Services/ConVars.cs
+          git add source/InventorySimulator/Services/ConVars.cs
+
+          # 若有冲突未解决，这里提交并完成合并
+          if [ -f .git/MERGE_HEAD ]; then
+            git commit --no-edit
+          fi
+
+      - name: Push to fork
+        run: |
+          git push origin main
+
+      - name: Detect upstream new tag
+        id: tags
+        run: |
+          UPSTREAM_TAG="$(git tag --list --sort=-v:refname | grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || true)"
+          echo "upstream_latest_tag=${UPSTREAM_TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Trigger release on upstream
+        if: steps.tags.outputs.upstream_latest_tag != ''
+        env:
+          GH_TOKEN: ${{ secrets.SYNC_TOKEN || github.token }}
+        run: |
+          # 若该 tag 尚未在 fork 发过 release，则触发 ci.yml 出包
+          TAG="${{ steps.tags.outputs.upstream_latest_tag }}"
+          EXISTING="$(gh release view "$TAG" --json tagName -q .tagName 2>/dev/null || true)"
+          if [ -z "$EXISTING" ]; then
+            echo "Triggering release for $TAG"
+            gh workflow run ci.yml -f version="$TAG" --ref main
+          else
+            echo "Release $TAG already exists, skipping."
+          fi
