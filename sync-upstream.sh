@@ -67,5 +67,9 @@ echo ""
 echo ">> 同步完成。改动概览："
 git log --oneline -3
 echo ""
-echo ">> 确认 ConVars.cs 仍是我们定制的版本 (应包含 YOUR_WORKER_URL):"
-grep -n "YOUR_WORKER_URL" "$CUSTOM_FILE" || echo "!! 警告: ConVars.cs 未包含我们的 URL，请检查"
+echo ">> 确认 ConVars.cs 仍是定制版本 (未回退到官方 inventory.cstrike.app):"
+if grep -n "inventory.cstrike.app" "$CUSTOM_FILE"; then
+  echo "!! 警告: ConVars.cs 已回退到官方 URL，同步请检查"
+else
+  echo "OK: ConVars.cs 保持定制（未使用官方 URL）"
+fi
